@@ -10,5 +10,6 @@ public record EmployeeRequest(
     @Email @NotBlank String email,
     String jobTitle,
     @PositiveOrZero BigDecimal salary,
-    LocalDate hireDate
+    LocalDate hireDate,
+    Long departmentId
 ) {}

@@ -20,11 +20,15 @@ public class Employee {
 
     @Column(nullable = false, unique = true)
     private String email;
-
+    
     private String jobTitle;
     private BigDecimal salary;
     private LocalDate hireDate;
 
+    @ManyToOne
+    @JoinColumn(name = "department_id")
+    private Department department;
+   
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -45,4 +49,7 @@ public class Employee {
 
     public LocalDate getHireDate() { return hireDate; }
     public void setHireDate(LocalDate hireDate) { this.hireDate = hireDate; }
+    
+    public Department getDepartment() { return department; }
+    public void setDepartment(Department department) { this.department = department; }
 }
