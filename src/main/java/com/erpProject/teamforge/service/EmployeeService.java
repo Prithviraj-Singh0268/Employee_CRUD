@@ -8,18 +8,31 @@ import com.erpProject.teamforge.repository.EmployeeRepository;
 import com.erpProject.teamforge.entity.Department;
 import com.erpProject.teamforge.repository.DepartmentRepository;
 import org.springframework.stereotype.Service;
-import java.util.List;
+import com.erpProject.teamforge.dto.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.util.Set;
+import com.erpProject.teamforge.repository.LeaveRequestRepository;
+
 
 @Service
 public class EmployeeService {
+	private static final Set<String> SORTABLE_FIELDS =
+		    Set.of("id", "firstName", "lastName", "email", "salary", "hireDate");
 
-    private final EmployeeRepository repository;
-    private final DepartmentRepository departmentRepository;
+	private final EmployeeRepository repository;
+	private final DepartmentRepository departmentRepository;
+	private final LeaveRequestRepository leaveRequestRepository;
 
-    public EmployeeService(EmployeeRepository repository, DepartmentRepository departmentRepository) {
-        this.repository = repository;
-        this.departmentRepository = departmentRepository;
-    }
+	public EmployeeService(EmployeeRepository repository,
+	                       DepartmentRepository departmentRepository,
+	                       LeaveRequestRepository leaveRequestRepository) {
+	    this.repository = repository;
+	    this.departmentRepository = departmentRepository;
+	    this.leaveRequestRepository = leaveRequestRepository;
+	}
 
     public EmployeeResponse create(EmployeeRequest req) {
         if (repository.existsByEmail(req.email())) {
@@ -30,8 +43,32 @@ public class EmployeeService {
         return toResponse(repository.save(employee));
     }
 
-    public List<EmployeeResponse> getAll() {
-        return repository.findAll().stream().map(this::toResponse).toList();
+    public PageResponse<EmployeeResponse> search(String keyword, Long departmentId,
+            int page, int size,
+            String sortBy, String direction) {
+    		if (!SORTABLE_FIELDS.contains(sortBy)) {
+    			throw new IllegalArgumentException("Cannot sort by: " + sortBy);
+    		}
+    		if (page < 0 || size < 1 || size > 100) {
+    			throw new IllegalArgumentException("page must be >= 0 and size must be between 1 and 100");
+    		}
+
+    		Sort sort = direction.equalsIgnoreCase("desc")
+    		? Sort.by(sortBy).descending()
+    		: Sort.by(sortBy).ascending();
+    		Pageable pageable = PageRequest.of(page, size, sort);
+
+    		String kw = (keyword == null) ? "" : keyword.trim();
+    		Page<Employee> result = repository.search(kw, departmentId, pageable);
+
+    		return new PageResponse<>(
+    		result.getContent().stream().map(this::toResponse).toList(),
+    		result.getNumber(),
+    		result.getSize(),
+    		result.getTotalElements(),
+    		result.getTotalPages(),
+    		result.isLast()
+    		);
     }
 
     public EmployeeResponse getById(Long id) {
@@ -45,7 +82,11 @@ public class EmployeeService {
     }
 
     public void delete(Long id) {
-        repository.delete(findOrThrow(id));
+        Employee employee = findOrThrow(id);
+        if (leaveRequestRepository.existsByEmployeeId(id)) {
+            throw new IllegalArgumentException("Cannot delete an employee who has leave requests");
+        }
+        repository.delete(employee);
     }
 
     private Employee findOrThrow(Long id) {

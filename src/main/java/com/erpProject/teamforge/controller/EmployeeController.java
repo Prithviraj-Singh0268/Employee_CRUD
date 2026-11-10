@@ -7,7 +7,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+
+import com.erpProject.teamforge.dto.PageResponse;
 
 @RestController
 @RequestMapping("/api/employees")
@@ -25,8 +26,14 @@ public class EmployeeController {
     }
 
     @GetMapping
-    public List<EmployeeResponse> getAll() {
-        return service.getAll();
+    public PageResponse<EmployeeResponse> getAll(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction) {
+        return service.search(keyword, departmentId, page, size, sortBy, direction);
     }
 
     @GetMapping("/{id}")
