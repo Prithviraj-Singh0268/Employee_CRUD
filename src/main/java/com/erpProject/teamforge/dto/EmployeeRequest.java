@@ -8,7 +8,7 @@ public record EmployeeRequest(
     @NotBlank String firstName,
     @NotBlank String lastName,
     @Email @NotBlank String email,
-    String jobTitle,
+    Long jobRoleId,
     @PositiveOrZero BigDecimal salary,
     LocalDate hireDate,
     Long departmentId

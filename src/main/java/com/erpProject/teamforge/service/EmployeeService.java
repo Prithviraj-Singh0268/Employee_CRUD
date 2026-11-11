@@ -5,16 +5,19 @@ import com.erpProject.teamforge.dto.EmployeeResponse;
 import com.erpProject.teamforge.dto.PageResponse;
 import com.erpProject.teamforge.entity.Department;
 import com.erpProject.teamforge.entity.Employee;
+import com.erpProject.teamforge.entity.JobRole;
 import com.erpProject.teamforge.exception.ResourceNotFoundException;
 import com.erpProject.teamforge.repository.AttendanceRepository;
 import com.erpProject.teamforge.repository.DepartmentRepository;
 import com.erpProject.teamforge.repository.EmployeeRepository;
+import com.erpProject.teamforge.repository.JobRoleRepository;
 import com.erpProject.teamforge.repository.LeaveRequestRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import java.math.BigDecimal;
 import java.util.Set;
 
 @Service
@@ -25,15 +28,18 @@ public class EmployeeService {
 
     private final EmployeeRepository repository;
     private final DepartmentRepository departmentRepository;
+    private final JobRoleRepository jobRoleRepository;
     private final LeaveRequestRepository leaveRequestRepository;
     private final AttendanceRepository attendanceRepository;
 
     public EmployeeService(EmployeeRepository repository,
                            DepartmentRepository departmentRepository,
+                           JobRoleRepository jobRoleRepository,
                            LeaveRequestRepository leaveRequestRepository,
                            AttendanceRepository attendanceRepository) {
         this.repository = repository;
         this.departmentRepository = departmentRepository;
+        this.jobRoleRepository = jobRoleRepository;
         this.leaveRequestRepository = leaveRequestRepository;
         this.attendanceRepository = attendanceRepository;
     }
@@ -111,11 +117,32 @@ public class EmployeeService {
             .orElseThrow(() -> new ResourceNotFoundException("Department not found with id " + id));
     }
 
+    private JobRole findJobRole(Long id) {
+        if (id == null) return null;
+        return jobRoleRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Job role not found with id " + id));
+    }
+
+    private void validateSalaryBand(JobRole role, BigDecimal salary) {
+        if (role == null || salary == null) return;
+        if (role.getMinSalary() != null && salary.compareTo(role.getMinSalary()) < 0) {
+            throw new IllegalArgumentException(
+                "Salary is below the minimum for " + role.getTitle() + " (" + role.getMinSalary() + ")");
+        }
+        if (role.getMaxSalary() != null && salary.compareTo(role.getMaxSalary()) > 0) {
+            throw new IllegalArgumentException(
+                "Salary is above the maximum for " + role.getTitle() + " (" + role.getMaxSalary() + ")");
+        }
+    }
+
     private void applyRequest(Employee e, EmployeeRequest r) {
+        JobRole role = findJobRole(r.jobRoleId());
+        validateSalaryBand(role, r.salary());
+
         e.setFirstName(r.firstName());
         e.setLastName(r.lastName());
         e.setEmail(r.email());
-        e.setJobTitle(r.jobTitle());
+        e.setJobRole(role);
         e.setSalary(r.salary());
         e.setHireDate(r.hireDate());
         e.setDepartment(findDepartment(r.departmentId()));
@@ -123,8 +150,11 @@ public class EmployeeService {
 
     private EmployeeResponse toResponse(Employee e) {
         Department d = e.getDepartment();
-        return new EmployeeResponse(e.getId(), e.getFirstName(), e.getLastName(),
-            e.getEmail(), e.getJobTitle(), e.getSalary(), e.getHireDate(),
+        JobRole j = e.getJobRole();
+        return new EmployeeResponse(e.getId(), e.getFirstName(), e.getLastName(), e.getEmail(),
+            j != null ? j.getId() : null,
+            j != null ? j.getTitle() : null,
+            e.getSalary(), e.getHireDate(),
             d != null ? d.getId() : null,
             d != null ? d.getName() : null);
     }

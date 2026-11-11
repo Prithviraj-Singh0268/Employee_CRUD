@@ -4,6 +4,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record EmployeeResponse(
-    Long id, String firstName, String lastName, String email,
-    String jobTitle, BigDecimal salary, LocalDate hireDate, Long departmentId, String departmentName
+    Long id,
+    String firstName,
+    String lastName,
+    String email,
+    Long jobRoleId,
+    String jobTitle,
+    BigDecimal salary,
+    LocalDate hireDate,
+    Long departmentId,
+    String departmentName
 ) {}

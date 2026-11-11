@@ -10,6 +10,8 @@ import org.springframework.data.repository.query.Param;
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     boolean existsByEmail(String email);
+    
+    boolean existsByJobRoleId(Long jobRoleId);
 
     boolean existsByDepartmentId(Long departmentId);
 
