@@ -12,6 +12,7 @@ import com.erpProject.teamforge.repository.DepartmentRepository;
 import com.erpProject.teamforge.repository.EmployeeRepository;
 import com.erpProject.teamforge.repository.JobRoleRepository;
 import com.erpProject.teamforge.repository.LeaveRequestRepository;
+import com.erpProject.teamforge.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,17 +32,19 @@ public class EmployeeService {
     private final JobRoleRepository jobRoleRepository;
     private final LeaveRequestRepository leaveRequestRepository;
     private final AttendanceRepository attendanceRepository;
+    private final UserRepository userRepository;
 
     public EmployeeService(EmployeeRepository repository,
                            DepartmentRepository departmentRepository,
                            JobRoleRepository jobRoleRepository,
                            LeaveRequestRepository leaveRequestRepository,
-                           AttendanceRepository attendanceRepository) {
+                           AttendanceRepository attendanceRepository,UserRepository userRepository) {
         this.repository = repository;
         this.departmentRepository = departmentRepository;
         this.jobRoleRepository = jobRoleRepository;
         this.leaveRequestRepository = leaveRequestRepository;
         this.attendanceRepository = attendanceRepository;
+        this.userRepository = userRepository;
     }
 
     public EmployeeResponse create(EmployeeRequest req) {
@@ -101,6 +104,9 @@ public class EmployeeService {
         }
         if (attendanceRepository.existsByEmployeeId(id)) {
             throw new IllegalArgumentException("Cannot delete an employee who has attendance records");
+        }
+        if (userRepository.existsByEmployeeId(id)) {
+            throw new IllegalArgumentException("Cannot delete an employee who has a login account");
         }
         repository.delete(employee);
     }
